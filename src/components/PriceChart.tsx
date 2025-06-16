@@ -1,17 +1,20 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { useState } from 'react';
+import { supportedCryptos, CryptoInfo } from '@/hooks/useCryptoCompare';
 
 interface ChartData {
   date: string;
-  price: number;
+  [key: string]: number | string; // Dynamic keys for each cryptocurrency
 }
 
 interface PriceChartProps {
   data: ChartData[];
   isLoading?: boolean;
+  loadingStatus?: string;
+  selectedCryptos?: string[];
   onPeriodChange: (period: string) => void;
 }
 
@@ -21,7 +24,7 @@ const periods = [
   { label: '90D', value: '90' }
 ];
 
-const PriceChart = ({ data, isLoading, onPeriodChange }: PriceChartProps) => {
+const PriceChart = ({ data, isLoading, loadingStatus, selectedCryptos = ['BTC'], onPeriodChange }: PriceChartProps) => {
   const [selectedPeriod, setSelectedPeriod] = useState('7');
 
   const handlePeriodClick = (period: string) => {
@@ -32,6 +35,8 @@ const PriceChart = ({ data, isLoading, onPeriodChange }: PriceChartProps) => {
 
   // Format price values to short form (e.g., 1K, 7M)  
   const formatPrice = (value: number): string => {
+    if (!value && value !== 0) return '-';
+    
     if (value >= 1000000) {
       return `$${(value / 1000000).toFixed(1)}M`;
     } else if (value >= 1000) {
@@ -66,7 +71,9 @@ const PriceChart = ({ data, isLoading, onPeriodChange }: PriceChartProps) => {
   };
 
   const formatTooltipValue = (value: number, name: string) => {
-    return [formatPrice(value), 'Price'];
+    // Find the crypto info for this line
+    const cryptoInfo = supportedCryptos.find(crypto => crypto.id === name);
+    return [formatPrice(value), cryptoInfo ? cryptoInfo.name : name];
   };
 
   if (isLoading) {
@@ -76,6 +83,9 @@ const PriceChart = ({ data, isLoading, onPeriodChange }: PriceChartProps) => {
           <CardTitle className="flex items-center justify-between">
             <div>
               <span className="text-sm font-semibold">Price Chart</span>
+              {loadingStatus && (
+                <p className="text-[10px] text-muted-foreground font-normal mt-0.5">{loadingStatus}</p>
+              )}
             </div>
             <div className="flex gap-1.5">
               {periods.map((period) => (
@@ -142,7 +152,9 @@ const PriceChart = ({ data, isLoading, onPeriodChange }: PriceChartProps) => {
         <CardTitle className="flex items-center justify-between">
           <div>
             <span className="text-sm font-semibold">Price Chart</span>
-            <p className="text-[10px] text-muted-foreground font-normal mt-0.5">{data.length} data points</p>
+            <p className="text-[10px] text-muted-foreground font-normal mt-0.5">
+              {data.length} data points • {selectedCryptos?.length || 0} coins
+            </p>
           </div>
           <div className="flex gap-1.5">
             {periods.map((period) => (
@@ -196,13 +208,31 @@ const PriceChart = ({ data, isLoading, onPeriodChange }: PriceChartProps) => {
                   fontSize: '11px'
                 }}
               />
-              <Line 
-                type="monotone" 
-                dataKey="price" 
-                stroke="#F7931A" 
-                strokeWidth={2.5}
-                dot={false}
-                activeDot={{ r: 4, fill: '#F7931A', strokeWidth: 2, stroke: '#ffffff' }}
+              {(selectedCryptos || ['bitcoin']).map(cryptoId => {
+                const cryptoInfo = supportedCryptos.find(c => c.id === cryptoId);
+                const color = cryptoInfo?.color || '#F7931A';
+                
+                return (
+                  <Line 
+                    key={cryptoId}
+                    type="monotone" 
+                    dataKey={cryptoId} 
+                    name={cryptoId}
+                    stroke={color} 
+                    strokeWidth={2}
+                    dot={false}
+                    activeDot={{ r: 4, fill: color, strokeWidth: 2, stroke: '#ffffff' }}
+                  />
+                );
+              })}
+              <Legend 
+                formatter={(value) => {
+                  const crypto = supportedCryptos.find(c => c.id === value);
+                  return crypto ? crypto.symbol : value;
+                }}
+                iconType="circle"
+                iconSize={8}
+                wrapperStyle={{ fontSize: '10px', paddingTop: '10px' }}
               />
             </LineChart>
           </ResponsiveContainer>

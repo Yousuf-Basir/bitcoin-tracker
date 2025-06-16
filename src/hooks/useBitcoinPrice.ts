@@ -99,7 +99,7 @@ const useBitcoinPrice = (currency: string) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }; 
 
   useEffect(() => {
     console.log(`Currency changed to: ${currency}`);
