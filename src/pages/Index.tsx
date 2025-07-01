@@ -5,10 +5,12 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import ThemeToggle from '@/components/ThemeToggle';
 import CurrencySelector from '@/components/CurrencySelector';
 import CryptoSelector from '@/components/CryptoSelector';
+import ConfigSettings from '@/components/ConfigSettings';
 import PriceCard from '@/components/PriceCard';
 import PriceChart from '@/components/PriceChart';
 import useCryptoCompare, { supportedCryptos } from '@/hooks/useCryptoCompare';
-import { TrendingUp, BarChart3, Info } from 'lucide-react';
+import { useConfig } from '@/context/ConfigContext';
+import { TrendingUp, BarChart3, Info, Settings } from 'lucide-react';
 
 const Index = () => {
   const [selectedCurrency, setSelectedCurrency] = useState('USD');
@@ -125,6 +127,15 @@ const Index = () => {
           />
         </div>
 
+        {/* Settings Section */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-1.5 px-0.5">
+            <Settings className="w-4 h-4 text-muted-foreground" />
+            <h2 className="text-sm font-semibold">Settings</h2>
+          </div>
+          <ConfigSettings className="animate-fade-in rounded-2xl" />
+        </div>
+
         {/* About Section */}
         <div className="space-y-3">
           <div className="flex items-center gap-1.5 px-0.5">
@@ -148,7 +159,12 @@ const Index = () => {
       <footer className="border-t border-border bg-card/50 backdrop-blur-sm mt-6">
         <div className="px-3 py-4 text-center">
           <p className="text-xs text-muted-foreground">Data by CoinGecko API</p>
-          <p className="text-[10px] text-muted-foreground mt-1">Updates every 30 seconds • {selectedCryptos.length} coins selected</p>
+          <p className="text-[10px] text-muted-foreground mt-1">
+            {useConfig().config.autoRefreshEnabled 
+              ? `Updates every ${useConfig().config.refreshIntervalMs / 1000} seconds` 
+              : 'Auto-refresh disabled'} 
+            • {selectedCryptos.length} coins selected
+          </p>
         </div>
       </footer>
     </div>

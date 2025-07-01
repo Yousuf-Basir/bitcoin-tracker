@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from 'react';
+import { useConfig } from '../context/ConfigContext';
 
 interface PriceData {
   price: number;
@@ -101,6 +102,9 @@ const useBitcoinPrice = (currency: string) => {
     }
   }; 
 
+  // Get config from context
+  const { config } = useConfig();
+
   useEffect(() => {
     console.log(`Currency changed to: ${currency}`);
     
@@ -111,13 +115,22 @@ const useBitcoinPrice = (currency: string) => {
     fetchCurrentPrice();
     fetchChartData('7');
 
-    // Set up polling for real-time price updates every 30 seconds
-    const priceInterval = setInterval(fetchCurrentPrice, 30000);
+    // Set up polling for real-time price updates based on config
+    let priceInterval: NodeJS.Timeout | null = null;
+    
+    if (config.autoRefreshEnabled) {
+      console.log(`Auto-refresh enabled with interval: ${config.refreshIntervalMs}ms`);
+      priceInterval = setInterval(fetchCurrentPrice, config.refreshIntervalMs);
+    } else {
+      console.log('Auto-refresh disabled');
+    }
 
     return () => {
-      clearInterval(priceInterval);
+      if (priceInterval) {
+        clearInterval(priceInterval);
+      }
     };
-  }, [currency]);
+  }, [currency, config.autoRefreshEnabled, config.refreshIntervalMs]);
 
   return {
     priceData,

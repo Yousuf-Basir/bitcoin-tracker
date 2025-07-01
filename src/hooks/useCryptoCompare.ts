@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useConfig } from '../context/ConfigContext';
 
 export interface CryptoInfo {
   id: string;
@@ -236,6 +237,9 @@ const useCryptoCompare = (currency: string, selectedCryptos: string[] = ['bitcoi
     }
   };
 
+  // Get config from context
+  const { config } = useConfig();
+
   useEffect(() => {
     console.log(`Currency changed to: ${currency} or selected cryptos changed`);
     
@@ -246,13 +250,22 @@ const useCryptoCompare = (currency: string, selectedCryptos: string[] = ['bitcoi
     fetchPriceData();
     fetchChartData('7');
 
-    // Set up polling for real-time price updates every 30 seconds
-    const priceInterval = setInterval(fetchPriceData, 30000);
+    // Set up polling for real-time price updates based on config
+    let priceInterval: NodeJS.Timeout | null = null;
+    
+    if (config.autoRefreshEnabled) {
+      console.log(`Auto-refresh enabled with interval: ${config.refreshIntervalMs}ms`);
+      priceInterval = setInterval(fetchPriceData, config.refreshIntervalMs);
+    } else {
+      console.log('Auto-refresh disabled');
+    }
 
     return () => {
-      clearInterval(priceInterval);
+      if (priceInterval) {
+        clearInterval(priceInterval);
+      }
     };
-  }, [currency, selectedCryptos.join(',')]);
+  }, [currency, selectedCryptos.join(','), config.autoRefreshEnabled, config.refreshIntervalMs]);
 
   return {
     priceData,
